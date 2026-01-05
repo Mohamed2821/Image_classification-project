@@ -1,52 +1,48 @@
-from flask import Flask, render_template, request
 import os
+os.environ["CUDA_VISIBLE_DEVICES"] = "-1"   # FORCE CPU (VERY IMPORTANT)
+
+from flask import Flask, render_template, request, jsonify
+import tensorflow as tf
 import numpy as np
 from PIL import Image
-import tensorflow as tf
 
 app = Flask(__name__)
 
-# ---------- CONFIG ----------
-UPLOAD_FOLDER = "static/uploads"
-os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
-
-# ---------- LOAD MODEL ----------
+# Load model ONCE (smooth + fast)
 model = tf.keras.applications.MobileNetV2(
-    weights="imagenet"
+    weights="imagenet",
+    include_top=True
 )
 
-# ---------- IMAGE PREPROCESS ----------
-def prepare_image(img):
-    img = img.resize((224, 224))
-    img = np.array(img)
-    img = tf.keras.applications.mobilenet_v2.preprocess_input(img)
-    img = np.expand_dims(img, axis=0)
-    return img
-
-# ---------- ROUTES ----------
-@app.route("/", methods=["GET", "POST"])
+@app.route("/")
 def index():
-    prediction = None
-    image_path = None
+    return render_template("index.html")
 
-    if request.method == "POST":
-        file = request.files.get("image")
+@app.route("/predict", methods=["POST"])
+def predict():
+    if "image" not in request.files:
+        return jsonify({"error": "No image uploaded"})
 
-        if file:
-            image_path = os.path.join(app.config["UPLOAD_FOLDER"], file.filename)
-            file.save(image_path)
+    file = request.files["image"]
 
-            img = Image.open(image_path).convert("RGB")
-            processed = prepare_image(img)
+    image = Image.open(file).convert("RGB")
+    image = image.resize((224, 224))
+    image = np.array(image)
+    image = np.expand_dims(image, axis=0)
+    image = tf.keras.applications.mobilenet_v2.preprocess_input(image)
 
-            preds = model.predict(processed)
-            decoded = tf.keras.applications.mobilenet_v2.decode_predictions(preds, top=1)
-            prediction = decoded[0][0][1]
+    predictions = model.predict(image)
+    decoded = tf.keras.applications.mobilenet_v2.decode_predictions(predictions, top=3)
 
-    return render_template("index.html", prediction=prediction, image=image_path)
+    results = []
+    for item in decoded[0]:
+        results.append({
+            "label": item[1],
+            "confidence": f"{item[2] * 100:.2f}%"
+        })
 
-# ---------- RENDER ENTRY POINT ----------
+    return jsonify(results)
+
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 10000))
-    app.run(host="0.0.0.0", port=port)
+    app.run(debug=True)
+

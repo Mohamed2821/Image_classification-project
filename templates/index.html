@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>AI Image Classifier</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+<div class="container">
+    <h1>AI Image Classification</h1>
+    <p>Upload an image and let AI predict what it is</p>
+
+    <input type="file" id="imageInput" accept="image/*">
+    <button onclick="predictImage()">Predict</button>
+
+    <div class="loader" id="loader"></div>
+
+    <div id="results"></div>
+</div>
+
+<script src="/static/animation.js"></script>
+</body>
+</html>

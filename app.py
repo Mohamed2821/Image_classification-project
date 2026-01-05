@@ -1,18 +1,22 @@
-import os
-os.environ["CUDA_VISIBLE_DEVICES"] = "-1"   # FORCE CPU (VERY IMPORTANT)
-
 from flask import Flask, render_template, request, jsonify
-import tensorflow as tf
-import numpy as np
 from PIL import Image
+import numpy as np
+import tensorflow as tf
 
 app = Flask(__name__)
 
-# Load model ONCE (smooth + fast)
+# Load model ONCE (important)
 model = tf.keras.applications.MobileNetV2(
-    weights="imagenet",
-    include_top=True
+    weights="imagenet"
 )
+
+def prepare_image(image):
+    image = image.convert("RGB")
+    image = image.resize((224, 224))
+    img_array = np.array(image)
+    img_array = np.expand_dims(img_array, axis=0)
+    img_array = tf.keras.applications.mobilenet_v2.preprocess_input(img_array)
+    return img_array
 
 @app.route("/")
 def index():
@@ -21,28 +25,21 @@ def index():
 @app.route("/predict", methods=["POST"])
 def predict():
     if "image" not in request.files:
-        return jsonify({"error": "No image uploaded"})
+        return jsonify({"error": "No image uploaded"}), 400
 
-    file = request.files["image"]
+    try:
+        image = Image.open(request.files["image"])
+        processed = prepare_image(image)
+        preds = model.predict(processed)
+        decoded = tf.keras.applications.mobilenet_v2.decode_predictions(preds, top=1)[0][0]
 
-    image = Image.open(file).convert("RGB")
-    image = image.resize((224, 224))
-    image = np.array(image)
-    image = np.expand_dims(image, axis=0)
-    image = tf.keras.applications.mobilenet_v2.preprocess_input(image)
-
-    predictions = model.predict(image)
-    decoded = tf.keras.applications.mobilenet_v2.decode_predictions(predictions, top=3)
-
-    results = []
-    for item in decoded[0]:
-        results.append({
-            "label": item[1],
-            "confidence": f"{item[2] * 100:.2f}%"
+        return jsonify({
+            "label": decoded[1],
+            "confidence": f"{decoded[2]*100:.2f}%"
         })
 
-    return jsonify(results)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 if __name__ == "__main__":
-    app.run(debug=True)
-
+    app.run()

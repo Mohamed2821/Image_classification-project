@@ -8,3 +8,4 @@ A Computer Vision project using Deep Learning and Flask.
 ## Run Locally
 pip install -r requirements.txt  
 python app.py
+open: https://image-classification-project-vuan.onrender.com

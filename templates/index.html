@@ -1,29 +1,23 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
     <title>AI Image Classification</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="/static/css/style.css">
+    <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
-<div class="container text-center mt-5">
-    <h1 class="title">AI Image Classification</h1>
-    <p class="subtitle">Computer Vision using Deep Learning</p>
 
-    <form method="POST" enctype="multipart/form-data" class="card p-4 shadow">
-        <input type="file" name="image" class="form-control mb-3" required>
-        <button class="btn btn-warning btn-lg">Predict Image</button>
-    </form>
+<div class="container">
+    <h1>🧠 AI Image Classifier</h1>
+    <p>Upload an image and let AI recognize it</p>
 
-    {% if image %}
-        <img src="{{ image }}" class="preview mt-4">
-    {% endif %}
+    <input type="file" id="imageInput">
+    <button onclick="uploadImage()">Classify</button>
 
-    {% if prediction %}
-        <div class="alert alert-success mt-4">
-            <strong>Prediction:</strong> {{ prediction }}
-        </div>
-    {% endif %}
+    <div class="loader" id="loader"></div>
+    <div id="result"></div>
 </div>
+
+<script src="/static/animation.js"></script>
 </body>
 </html>
